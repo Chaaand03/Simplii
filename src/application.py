@@ -7,6 +7,8 @@ from werkzeug.security import generate_password_hash
 import schedule
 import time
 import atexit
+import os
+from openai import OpenAI
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -19,13 +21,19 @@ from flask.helpers import make_response
 from flask.json import jsonify
 from flask_mail import Mail, Message
 from pymongo import ASCENDING
-from forms import ForgotPasswordForm, RegistrationForm, LoginForm, ResetPasswordForm, PostingForm, ApplyForm, TaskForm, UpdateForm
+from forms import ForgotPasswordForm, RegistrationForm, LoginForm, ResetPasswordForm, PostingForm, ApplyForm, TaskForm, UpdateForm,ReminderForm
 import bcrypt
 import os
 import csv
 import sys
+import openai
+import asyncio
+from openai import AsyncOpenAI
+from utils import format_gcal_date
 
 from flask_login import LoginManager, login_required
+
+from firebase_config import auth
 
 app = Flask(__name__)
 app.secret_key = 'secret'
@@ -208,6 +216,57 @@ def recommend():
         return redirect(url_for('home'))
     
 
+@app.route("/kanbanBoard", methods=['GET', 'POST'])
+def kanbanBoard():
+    ############################
+    # kanbanBoard() function opens the task_recommendation.csv file and displays the data of the file
+    # route "/kanbanBoard" will redirect to kanbanBoard() function.
+    # input: The function opens the task_recommendation.csv
+    # Output: Our function will display tasks in a Kanban Board format
+    # Output: Our function will display tasks in a Kanban Board format
+    # ##########################
+    if session.get('user_id'):
+        user_str_id = session.get('user_id')
+        user_id = ObjectId(user_str_id)
+
+        # Separate tasks based on status
+        todo_tasks = list(mongo.db.tasks.find({'user_id': user_id, 'status': 'To-Do'}).sort('duedate', ASCENDING))
+        in_progress_tasks = list(mongo.db.tasks.find({'user_id': user_id, 'status': 'In Progress'}).sort('duedate', ASCENDING))
+        done_tasks = list(mongo.db.tasks.find({'user_id': user_id, 'status': 'Done'}).sort('duedate', ASCENDING))
+        return render_template('kanbanBoard.html', title='KanbanBoard', todo_tasks=todo_tasks, in_progress_tasks=in_progress_tasks, done_tasks=done_tasks)
+
+    else:
+        return redirect(url_for('home'))
+
+@app.route("/update_task_status", methods=['POST'])
+def update_task_status():
+    ############################
+    # update_task_status() function updates the tasks status by changing in the KanbanBoard.
+    # route "/update_task_status" will redirect to kanbanBoard() function.
+    # input: The function O/p of sortable from KanbanBoard actions.
+    # Output: Our function will display updated tasks in a Kanban Board format
+    # ##########################
+    try:
+        user_str_id = session.get('user_id')
+        user_id = ObjectId(user_str_id)
+        task_id = request.form.get('task')
+        new_status = request.form.get('status')
+
+        # Your MongoDB update query here
+        # Make sure to replace 'user_id' and 'taskname' with your actual field names
+        update_result = mongo.db.tasks.update_one(
+            {'user_id': user_id, 'taskname': task_id},
+            {'$set': {'status': new_status}}
+        )
+
+        if update_result.modified_count > 0:
+            flash(f'Task Updated!', 'success')
+            return jsonify({'task': task_id, 'status': new_status})
+        else:
+            return jsonify({'error': 'Failed to update task status'})
+
+    except Exception as e:
+        return jsonify({'error': str(e)})
 
 
 @app.route("/send_email_reminders", methods=['GET', 'POST'])
@@ -261,8 +320,6 @@ def send_email_reminders():
         return redirect(url_for('home'))
 
 
-
-
 @app.route("/dashboard")
 def dashboard():
     ############################
@@ -272,10 +329,37 @@ def dashboard():
     # Output: Our function will redirect to the dashboard page with user tasks being displayed
     # ##########################
     tasks = ''
-    print('session in dashboard ',session)
+    # reply = asyncio.run(chatgptquery("What are the steps to open a bank account?"))
     if session.get('user_id'):
         tasks = mongo.db.tasks.find({'user_id': ObjectId(session.get('user_id'))})
-    return render_template('dashboard.html', tasks=tasks)
+        task_list = []
+        for task in tasks:
+            print(task)
+            task["gcal_link"] = format_gcal_date(task.get('taskname'),task.get('startdate'),task.get('duedate'))
+            task_list.append(task)
+    return render_template('dashboard.html', tasks=task_list)
+
+@app.route("/gpt", methods=['GET', 'POST'])
+def gpt():
+    ############################
+    # dashboard() function displays the tasks of the user
+    # route "/dashboard" will redirect to dashboard() function.
+    # input: The function takes session as the input and fetches user tasks from Database
+    # Output: Our function will redirect to the dashboard page with user tasks being displayed
+    # ##########################
+    params = request.url.split('?')[1].split('+')
+    # for i in range(len(params)):
+    #     params[i] = params[i].split('=')
+    # for i in range(len(params)):
+    #     if "%" in params[i][1]:
+    #         index = params[i][1].index('%')
+    #         params[i][1] = params[i][1][:index] + \
+    #                        " " + params[i][1][index + 3:]
+    # d = {}
+    # for i in params:
+    #     d[i[0]] = i[1]
+    return render_template('gpt.html', searchQuery=params)
+
 
 @app.route("/about")
 def about():
@@ -285,6 +369,18 @@ def about():
     # ##########################
     return render_template('about.html', title='About')
 
+@app.route("/reminderscheduled")
+def reminderscheduled():
+    if session.get('user_id'):
+        user_str_id = session.get('user_id')
+        user_id = ObjectId(user_str_id)
+
+        reminderScheduler = list(mongo.db.reminderScheduler.find({'user_id':user_id}).sort('reminder_date', ASCENDING))
+        # print("reminder scheduled ",reminderScheduler)
+        return render_template('remindersScheduled.html', title='reminderScheduler', reminderScheduler=reminderScheduler)
+
+    else:
+        return redirect(url_for('home'))
 
 @app.route("/register", methods=['GET', 'POST'])
 def register():
@@ -304,6 +400,7 @@ def register():
                 password = request.form.get('password')
                 mongo.db.users.insert_one({'name': username, 'email': email, 'pwd': bcrypt.hashpw(
                     password.encode("utf-8"), bcrypt.gensalt()), 'tasksList':[], 'temp': None})
+                auth.create_user_with_email_and_password(email, password)
                 msg = Message('Welcome to Simplii: Your Task Scheduling Companion', sender='dummysinghhh@gmail.com', recipients=[email])
                 msg.body = f"Hey {username},\n\n" \
                 "We're excited to welcome you to Simplii, your new task scheduling companion. Simplii is here to help you stay organized, meet deadlines, and achieve your goals efficiently.\n\n" \
@@ -353,7 +450,7 @@ def task():
     # Input: Task, Category, start date, end date, number of hours
     # Output: Value update in database and redirected to home login page
     # ##########################
-    if session.get('user_id'): 
+    if session.get('user_id'):
         form = TaskForm()
         if form.validate_on_submit():
             print("inside form")
@@ -366,32 +463,155 @@ def task():
                 duedate = request.form.get('duedate')
                 hours = request.form.get('hours')
                 status = request.form.get('status')
-                task_id = mongo.db.tasks.insert({'user_id': user_id,
+                task_id = mongo.db.tasks.insert_one({'user_id': user_id,
                                        'taskname': taskname,
                                        'category': category,
                                        'startdate': startdate,
                                        'duedate': duedate,
                                        'status': status,
                                        'hours': hours})
-                
+
                 #Now update the user schema's TaskList field with the taskId(Basically append the new task id to that array)
                 user_document = mongo.db.users.find_one({'_id': user_id})
                 tasks_list = user_document.get('tasksList', [])
                 tasks_list.append(task_id)
 
                 # Update the user's tasksList field
-                mongo.db.users.update_one(
-                    {'_id': user_id},
-                    {
-                        '$set': {'tasksList': tasks_list}
-                    }
-                )
+                # mongo.db.users.update_one(
+                #     {'_id': user_id},
+                #     {
+                #         '$set': {'tasksList': tasks_list}
+                #     }
+                # )
             flash(f' {form.taskname.data} Task Added!', 'success')
             return redirect(url_for('home'))
     else:
         return redirect(url_for('home'))
     return render_template('task.html', title='Task', form=form)
 
+
+@app.route("/schedule_reminder", methods=['GET', 'POST'])
+def scheduleReminder():
+    print("Schedule reminders")
+    ############################
+    # scheduleRemainder() function displays the remainder.html page for updations
+    # route "/scheduleRemainder" will redirect to updateTask() function.
+    # input: The function takes various task values as Input
+    # Output: Out function will redirect to the updateTask page
+    # ##########################
+
+    params = request.url.split('?')[1].split('&')
+    for i in range(len(params)):
+        params[i] = params[i].split('=')
+    for i in range(len(params)):
+        if "%" in params[i][1]:
+            index = params[i][1].index('%')
+            params[i][1] = params[i][1][:index] + \
+                           " " + params[i][1][index + 3:]
+    d = {}
+    for i in params:
+        d[i[0]] = i[1]
+
+    form = ReminderForm()
+    form.taskname.data = d['taskname']
+    form.category.data = d['category']
+    form.status.data = d['status']
+    form.hours.data = d['hours']
+    form.startdate.data = d['startdate']
+    form.duedate.data = d['duedate']
+
+    if request.method == 'POST':
+        user_str_id = session.get('user_id')
+        user_id = ObjectId(user_str_id)
+        task_str_id = request.form.get('task_id')  # assuming 'task_id' is part of the form data
+        task_id = ObjectId(task_str_id)
+        taskname = form.taskname.data
+        startdate = form.startdate.data
+        duedate = form.duedate.data
+        category = form.category.data
+        reminder_date = request.form.get('reminder_date')
+        reminder_time_str = request.form.get('reminderTime')
+
+        # Convert to datetime objects
+        reminder_date_str = datetime.strptime(reminder_date + ' ' + reminder_time_str, '%Y-%m-%d %H:%M')
+
+        # Insert a new document into the "reminderScheduler" collection
+        reminderScheduler_id = mongo.db.reminderScheduler.insert_one({
+            'user_id': user_id,
+            'task_id': task_id,
+            'taskname': taskname,
+            'category': category,
+            'startdate':startdate,
+            'duedate':duedate,
+            'reminder_date': reminder_date_str,
+            'reminder_time': reminder_time_str,
+        })
+
+        # Now, update the user schema's TaskList field
+        mongo.db.users.update_one(
+            {'_id': user_id},
+            {'$addToSet': {'tasksList': reminderScheduler_id.inserted_id}}
+        )
+
+        # reminder_date = datetime.strptime(reminder_date_str, '%Y-%m-%d %H:%M')
+
+        # relevant_reminders = list(mongo.db.reminderScheduler.find({
+        #     'user_id': user_id,
+        #     'reminder_date': {'$lt': reminder_date_str}
+        # }).sort('reminder_date', 1))
+
+        # due_date = datetime.strptime(due_date, '%Y-%m-%d').date()
+        #
+        # # Fetch tasks whose due date falls within the specified range
+        # relevant_tasks = mongo.db.tasks.find({
+        #     'user_id': user_id,
+        #     'duedate': {'$lt': due_date.strftime('%Y-%m-%d')}  # Convert due_date back to string for comparison
+        # }).sort('duedate', 1)
+
+        # Convert the cursor to a list of dictionaries
+        # relevant_reminders = list(relevant_reminders)
+        # print("relevant reminders ",relevant_reminders)
+
+        # Create an HTML table from the reminder data
+        # reminder_table_html = ("<table border='1'>"
+        #                        "<tr>"  "<th>Task Name</th>"
+        #                                "<th>Category</th>"
+        #                                "<th>Start Date</th>"
+        #                                "<th>Due Date</th></tr>")
+
+        # for reminder in relevant_reminders:
+        # reminder_table_html += f"<tr><td>{reminder['taskname']}</td><td>{reminder['category']}</td><td>{reminder['startdate']}</td><td>{reminder['duedate']}</tr>"
+
+        # reminder_table_html += "</table>"
+
+        # Compose the reminder email
+        email = session.get('email')
+        msg = Message('Reminder: Upcoming Task', sender='dummysinghhh@gmail.com', recipients=[email])
+        scheduled = int(time.mktime(reminder_date_str.timetuple()))
+        print("time of reminder", scheduled)
+        msg.extra_headers = {'X-SMTPAPI': json.dumps({'send_at': scheduled})}
+        # Create the HTML version of the email with the reminder table
+        # reminder_email_body = f"Here are your upcoming reminders:\n\n{reminder_table_html}"
+        reminder_email_body = f"There is an upcoming reminder for you!!\n"
+        msg.html = reminder_email_body
+        mail.send(msg)
+
+        # schedule.every().day.at(reminder_date).do(scheduleReminder)
+
+        flash(f'Reminder Scheduled!', 'success')
+        return redirect(url_for('home'))
+    return render_template('remainder.html',title='Reminder',form=form)
+
+async def chatgptquery(query):
+    client = AsyncOpenAI(api_key = os.getenv('OPENAI_API_KEY'))  # defaults to os.environ.get("OPENAI_API_KEY")
+    messages = []
+    user_query = query + "\n Give the output in html format"
+    messages.append({"role": "user", "content": user_query})
+    completion = await client.chat.completions.create(model="gpt-3.5-turbo", messages=messages) 
+    reply = completion.choices[0].message.content
+    
+    return reply
+        
 
 @app.route("/editTask", methods=['GET', 'POST'])
 def editTask():
@@ -468,7 +688,7 @@ def updateTask():
                 duedate = request.form.get('duedate')
                 hours = request.form.get('hours')
                 status = request.form.get('status')
-                mongo.db.tasks.update({'user_id': user_id, 'taskname': d['taskname'], 'startdate': d['startdate'], 'duedate': d['duedate']},
+                mongo.db.tasks.update_one({'user_id': user_id, 'taskname': d['taskname'], 'startdate': d['startdate'], 'duedate': d['duedate']},
                                       {'$set': {'taskname': taskname, 'startdate': startdate, 'duedate': duedate, 'category': category, 'status': status, 'hours': hours}})
             flash(f' {form.taskname.data} Task Updated!', 'success')
             return redirect(url_for('dashboard'))
@@ -489,19 +709,18 @@ def login():
     if not session.get('user_id'):
         form = LoginForm()
         if form.validate_on_submit():
-            temp = mongo.db.users.find_one({'email': form.email.data}, {
-                'email', 'name', 'pwd'})
-            print("temp ", temp)
-            if temp is not None and temp['email'] == form.email.data and (
-                bcrypt.checkpw(
-                    form.password.data.encode("utf-8"),
-                    temp['pwd'])): #or temp['temp'] == form.password.data
+            email = form.email.data
+            password = form.password.data
+            try:
+                user = auth.sign_in_with_email_and_password(email, password)
+                temp = mongo.db.users.find_one({'email': form.email.data}, {
+                    'email', 'name', 'pwd'})
                 flash('You have been logged in!', 'success')
                 session['email'] = temp['email']
                 session['name'] = temp['name']
                 session['user_id'] = str(temp['_id'])
                 return redirect(url_for('dashboard'))
-            else:
+            except:
                 flash(
                     'Login Unsuccessful. Please check username and password',
                     'danger')

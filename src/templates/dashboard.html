@@ -2,53 +2,69 @@
 {% block content %}
 <div class="card status-card col-md" style="width: auto;">
     <div class="card-body">
-        <h5 class="card-title">All Tasks</h5>
+        <h3 class="card-title" style="text-align: center;">All Tasks</h3>
     </div>
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
     <script type="text/javascript">
-    $(document).ready(function () {
-        $("#ddlStatus,#ddlCategory").on("change", function () {
-            var Status = $('#ddlStatus').find("option:selected").val();
-            var Category = $('#ddlCategory').find("option:selected").val();
-            SearchData(Status, Category)
-        });
-    });
-    function SearchData(Status, Category) {
-        if (Status.toUpperCase() == 'ALL' && age.toUpperCase() == 'ALL') {
-            $('myTable tbody tr').show();
-        } else {
-            $('#myTable tbody tr:has(td)').each(function () {
-                var rowStatus = $.trim($(this).find('td:eq(1)').text());
-                var rowCategory = $.trim($(this).find('td:eq(2)').text());
-                if (Status.toUpperCase() != 'ALL' && Category.toUpperCase() != 'ALL') {
-                    if (rowStatus.toUpperCase() == Status.toUpperCase() && rowCategory == Category) {
-                        $(this).show();
+
+            $(document).ready(function () {
+                var data = [];
+                // assuming that data is populated initially in the table
+                $('#myTable tbody tr').each(function () {
+                    var rowData = [];
+                    $(this).find('td').each(function () {
+                        rowData.push($(this).text());
+                    });
+                    data.push(rowData);
+                });                                                 
+
+                $("#ddlStatus,#ddlCategory,#ddlShow").on("change", function () {
+                    var Status = $('#ddlStatus').find("option:selected").val();
+                    var Category = $('#ddlCategory').find("option:selected").val();
+                    var Show = $('#ddlShow').find("option:selected").val();
+                    console.log(Status, Category, Show);
+                    SearchData(Show, Status, Category)
+                });
+            });
+
+            function SearchData(Show, Status, Category) {
+                    if (Status.toUpperCase() == 'ALL' && Category.toUpperCase() == 'ALL') {
+                        // Show all rows if both Status and Category are 'ALL'
+                        $('#myTable tbody tr').show();
                     } else {
-                        $(this).hide();
-                    }
-                } else if ($(this).find('td:eq(1)').text() != '' || $(this).find('td:eq(1)').text() != '') {
-                    if (Status != 'all') {
-                        if (rowStatus.toUpperCase() == Status.toUpperCase()) {
-                            $(this).show();
-                        } else {
-                            $(this).hide();
-                        }
-                    }
-                    if (Category != 'all') {
-                        if (rowCategory == Category) {
-                            $(this).show();
-                        }
-                        else {
-                            $(this).hide();
-                        }
+
+                        $('#myTable tbody tr:has(td)').each(function () {
+                            var rowStatus = $.trim($(this).find('td:eq(1)').text());
+                            var rowCategory = $.trim($(this).find('td:eq(2)').text());
+
+                            if (Status.toUpperCase() != 'ALL' && Category.toUpperCase() != 'ALL') {
+                                if (rowStatus.toUpperCase() == Status.toUpperCase() && rowCategory == Category) {
+                                    $(this).show();
+                                } else {
+                                    $(this).hide();
+                                }
+                            } else if ($(this).find('td:eq(1)').text() != '' || $(this).find('td:eq(1)').text() != '') {
+                                if (Status != 'all') {
+                                    if (rowStatus.toUpperCase() == Status.toUpperCase()) {
+                                        $(this).show();
+                                    } else {
+                                        $(this).hide();
+                                    }
+                                }
+                                if (Category != 'all') {
+                                    if (rowCategory == Category) {
+                                        $(this).show();
+                                    } else {
+                                        $(this).hide();
+                                    }
+                                }
+                            }
+                        });
+                        $('#myTable tbody tr:visible:gt(' + (Show - 1) + ')').hide();
                     }
                 }
- 
-            });
-        }
-    }
-</script>
 
+</script>
     
 <table data-toggle="table" data-flat="true" data-search="true" id="myTable" class="paginated table table-striped table-hover">
         <div class="table-wrapper">
@@ -56,45 +72,49 @@
             </div>
                 <div class="table-filter">
                     <div class="row">
-                        <div class="col-sm-2">
-                            <div class="show-entries">
-                                <span>Show</span>
-                                <select class="form-control">
-                                    <option>5</option>
-                                    <option>10</option>
+                    
+                        <div class="col-sm-4">
+                            <div class="filter-group">
+                                <label>Status</label>
+                                <select class="cl_status form-control" id="ddlStatus">
+                                    <option value="all">Select status </option>
+                                    <option value="To-Do">To-Do</option>
+                                    <option value="In Progress">In Progress</option>
+                                    <option value="Done">Done</option>
                                 </select>
-                                <span>entries</span>
-                                &nbsp
-                                &nbsp
                             </div>
+                            <span class="filter-icon"><i class="fa fa-filter"></i></span>
                         </div>
+                    
+                        <div class="col-sm-4">
+                            <div class="filter-group">
+                                <label>Category</label>
+                                <select class="cl_category form-control" id="ddlCategory">
+                                    <option value="all">Select category </option>
+                                    <option value="Physical">physical</option>
+                                    <option value="Intellectual">intellectual</option>
+                                </select>
+                            </div>
+                            <span class="filter-icon"><i class="fa fa-filter"></i></span>
+                        </div>
+
+                        <div class="col-sm-4">
+                            <div class="filter-group">
+                                <label>Task display limit</label>
+                                <select class="cl_show form-control" id="ddlShow">
+                                    <option value="all">Select limit</option>
+                                    <option value="3">3</option>
+                                    <option value="5">5</option>
+                                    <option value="10">10</option>
+                                </select>
+                            </div>
+                            <span class="filter-icon"><i class="fa fa-filter"></i></span>
+                        </div>
+                        
                     </div>
-                </div>
-            &nbsp
-            <div class="row">
-                <div class="col-sm-7">
-                    <div class="filter-group">
-                        <label>Status</label>
-                        <select class="cl_status" id="ddlStatus">
-                            <option value="all">Select status </option>
-                                <option value="To-Do">To-Do</option>
-                                <option value="In Progress">In Progress</option>
-                                <option value="Done">Done</option>
-                        </select>
-                        &nbsp  &nbsp &nbsp &nbsp &nbsp
-                        <label>Category</label>
-                            <select class="cl_category" id="ddlCategory">
-                                <option value="all">Select category </option>
-                                <option value="Physical">physical</option>
-                                <option value="Intellectual">intellectual</option>
-                            </select>
-                            &nbsp
-                    </div>
-                    <span class="filter-icon"><i class="fa fa-filter"></i></span>
-                </div>
-            </div>
-            
+                </div>    
         </div>
+        <br><br>
         <thead>
             <tr style="background-color: #D5D8DD; text-align: center;">
                 <th>Task</th>
@@ -104,6 +124,8 @@
                 <th>Due Date</th>
                 <th>Edit</th>
                 <th>Delete</th>
+                <th>Send Reminders</th>
+                <th>Add Google Calendar</th>
             </tr>
         </thead>
         <tbody>
@@ -120,8 +142,13 @@
                 <td>{{ item['category'] }}</td>
                 <td>{{ item['startdate'] }}</td>
                 <td>{{ item['duedate'] }}</td>
-                <td style="text-align: center;"><button class='editButton'>edit</button></td>
+                <td style="text-align: center;"><button class='editButton'>Edit</button></td>
                 <td style="text-align: center;"><button class='deleteButton'>Delete</button></td>
+                <td style="text-align: center;"><button class='reminderButton'>Send Remainder</button></td>
+                <td style="text-align:center;"><a href="{{ item.gcal_link }}">Add to my calendar</a></td>
+
+
+                
             </tr>
             {% endfor %}
             

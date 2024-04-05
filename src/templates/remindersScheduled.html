@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+{% extends "layout.html" %}
+{% block content %}
+    <br>
+    <div class='container'>
+        <h1>Reminders Scheduled</h1>
+
+        <table class='table'>
+            <thead>
+                <tr>
+                    <th scope="col">Task Name</th>
+                    <th scope="col">Category</th>
+                    <th scope="col">Start Date</th>
+                    <th scope="col">Due Date</th>
+                    <th scope="col">Reminder date & time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for reminder in reminderScheduler %}
+                    <tr>
+                        <td>{{ reminder.taskname }}</td>
+                        <td>{{ reminder.category }}</td>
+                        <td>{{ reminder.startdate }}</td>
+                        <td>{{ reminder.duedate }}</td>
+                        <td>{{ reminder.reminder_date }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+{% endblock content %}
+

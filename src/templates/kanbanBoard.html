@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+{% extends "layout.html" %}
+{% block content %}
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">        
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/sortablejs@1.14.0/Sortable.min.css">
+    
+    <style>
+        .task-list {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 10px;
+            padding: 10px;
+        }
+
+        .task-item {
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            margin: 5px;
+            padding: 10px;
+            cursor: grab;
+        }
+
+        #todo-list {
+            background-color: #b6f5f8; /* Blue */
+        }
+
+        #in-progress-list {
+            background-color: #f8b3b3; /* Red */
+        }
+
+        #done-list {
+            background-color: #c4f8c4; /* Green */
+        }
+    </style>
+    
+
+    <br><br><br><br><br>
+    <div class='container'>
+        <h1 style="text-align: center;">Kanban Board</h1>
+
+        <!-- To-Do Tasks -->
+        <div class="container-fluid">
+            <div class="row">
+                <!-- To-Do Tasks -->
+                <div class="col-sm-4">
+                    <div class="task-list" id="todo-list">
+                        <h2>To-Do</h2>
+                        <ul class="list-group" id="To-Do">
+                            {% for task in todo_tasks %}
+                                <li class="list-group-item task-item" data-task-id="{{ task.taskname }}">{{ task.taskname }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+        
+                <!-- In-Progress Tasks -->
+                <div class="col-sm-4">
+                    <div class="task-list" id="in-progress-list">
+                        <h2>In-Progress</h2>
+                        <ul class="list-group" id="In Progress">
+                            {% for task in in_progress_tasks %}
+                                <li class="list-group-item task-item" data-task-id="{{ task.taskname }}">{{ task.taskname }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+        
+                <!-- Done Tasks -->
+                <div class="col-sm-4">
+                    <div class="task-list" id="done-list">
+                        <h2>Done</h2>
+                        <ul class="list-group" id="Done">
+                            {% for task in done_tasks %}
+                                <li class="list-group-item task-item" data-task-id="{{ task.taskname }}">{{ task.taskname }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+
+        <!-- Bootstrap and Sortable.js Scripts -->
+        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+        <script src="https://unpkg.com/sortablejs@1.14.0/Sortable.min.js"></script>
+        <script src="path/to/script.js"></script>
+
+{% endblock content %}

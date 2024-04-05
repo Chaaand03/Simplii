@@ -14,7 +14,6 @@ records = p_details.find()
 list_record = list(records)
 
 df = pd.DataFrame(list_record)
-
 start = df['startdate'].tolist()
 due = df['duedate'].tolist()
 email = df['email'].tolist()
@@ -84,7 +83,7 @@ with open(os.path.join(sys.path[0], "task_recommendation.txt"), 'wt') as f:
     f.write("Here's your task recommendation on tasks you're working...\n\n")
     f.write(x)
     f.write("\n\n")
-    f.write("Here are some task recommnedation so you don't miss the deadlines...\n\n")
+    f.write("Here are some task recommendation so you don't miss the deadlines...\n\n")
     f.write(y)
 
 # RECOMMENDATIONS IN CSV FILE

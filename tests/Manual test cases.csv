@@ -1,0 +1,21 @@
+Web application ,,,,
+,,,,
+Test Case,Expected Result,Actual Result,Pass/Fail,Comments
+Sign up page is working,Sign up process should succeed,Sign up process is successful,Pass ,
+Sign in using the correct credentials,Sign in should be succcesful ,user sign in is successful,Pass,
+Sign in using wrong credentials,Sign in should fail,Sign in is failing,Fail,
+User should be able to add tasks,tasks should be added and displayed in dashboard,tasks are displayed in dashboard,Pass,
+user should be able to schedule reminders,reminders should be scheduled and email sent,reminders are being scheduled and email sent ,Pass,
+change task status in kanban board by dragging tasks back and forth,task status changed and flash message should be displayed as 'Task edited',,Pass,
+click on add to google calender,should take the user to the google calender interface to add tasks there,users are being redirected to google calender and are able to add tasks ,Pass,
+"sort tasks based on status ,category and task display limit",Display tasks specific to the sorting parameter selected ,Is displaying tasks according to selected sorting parameter,Pass,sorting filter should sort results for either based on status or category and Task display limit is dependent on either one of them.
+,,,,
+Android Application,,,,
+,,,,
+Test Case,Expected Result,Actual Result,Pass/Fail,Comments
+sign up window is working,users should be able to sign up,users are able to register and sign up,Pass ,
+Sign in using the correct credentials,Sign in should be succcesful ,user sign in is successful,Pass,
+Sign in using wrong credentials,Sign in should fail,Sign in is failing,Fail,
+Search for list of things in the 'tudum' Smart Assistant ,Should return a list of things that can be added as tasks,It is returning a list of things that can be added to tasks,Pass,Test case will fail if the query is not of the expected format such as a list.
+click on add to google calender,should take the user to the google calender interface to add tasks there,users are being redirected to google calender and are able to add tasks ,Pass,
+click on the reminder icon beside the user's tasks ,email should be sent to the user's mail id,email reminder is sent to the user's mail id.,Pass,

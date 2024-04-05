@@ -1,0 +1,93 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<style>
+    .content-section {
+        padding-top: 3em;
+        background-color: rgb(232, 229, 254);
+    }
+
+    .tasks-list {
+        width: 50%;
+        margin: 0 auto;
+        padding: 20px;
+        border-radius: 8px;
+    }
+
+    .task-info {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .task-info li {
+        margin-bottom: 10px;
+        padding-bottom: 1em;
+        text-align: center;
+        justify-items: center;
+    }
+
+    .form-rows {
+        padding-top: 3px;
+        margin-left: 25px;
+        margin-right: 25px;
+    }
+</style>
+
+<div class="content-section">
+
+    {{ form.hidden_tag() }}
+    <h4>Add a reminder for...</h4>
+
+    <div class="tasks-list">
+        <ul class="task-info">
+            <li><strong>Task name: &nbsp;</strong> {{ form.taskname.data }}</li>
+            <li><strong>Category: &nbsp;</strong> {{ form.category.data }}</li>
+            <li><strong>Start Date: &nbsp;</strong> {{ form.startdate.data }}</li>
+            <li><strong>Due Date: &nbsp;</strong> {{ form.duedate.data }}</li>
+            <li><strong>Status: &nbsp;</strong> {{ form.status.data }}</li>
+        </ul>
+    </div>
+
+    <form method="POST" action="">
+        <fieldset class="form-group">
+            <div class="row form-rows">
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <b> {{ form.reminder_date.label(class="form-control-label") }} </b>
+                        {% if form.reminder_date.errors %}
+                        form.reminder_date(class="form-control form-control-lg")
+                        <div class="invalid-feedback">
+                            {% for error in form.reminder_date.errors %}
+                            <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        {{ form.reminder_date(class="form-control form-control-lg") }}
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="col-sm-6">
+                    <div class="form-group">
+                        <b>{{ form.reminderTime.label(class="timepicker") }}</b>
+                        {% if form.reminderTime.errors %}
+                        {{ form.reminderTime(class="form-control form-control-lg is-invalid") }}
+                        <div class="invalid-feedback">
+                            {% for error in form.reminderTime.errors %}
+                            <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        {{ form.reminderTime(class="form-control form-control-lg") }}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+        <div class="form-group " style="text-align: center;">
+            {{ form.submit(class="btn btn-info") }}
+        </div>
+    </form>
+</div>
+{% endblock content %}

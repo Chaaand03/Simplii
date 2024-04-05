@@ -1,0 +1,19 @@
+{
+    "manifest_version": 2,
+    "name": "Simplii-Manage Tasks",
+    "version": "0.1.0",
+    "description": "A simple task manager extension",
+  
+    "permissions": [
+      "activeTab"
+    ],
+  
+    "browser_action": {
+      "default_popup": "popup.html"
+    },
+  
+    "background": {
+      "scripts": ["popup.js"],
+      "persistent": false
+    }
+}

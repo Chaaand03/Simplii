@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms.fields.html5 import DateField
+from wtforms.fields.html5 import DateField,TimeField
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
 from wtforms.fields.core import SelectField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
@@ -169,3 +169,32 @@ class ResetPasswordForm(FlaskForm):
         'Confirm Password', validators=[
             DataRequired(), EqualTo('password')])
     submit = SubmitField('Reset')
+
+
+class ReminderForm(FlaskForm):
+    taskname = StringField('Taskname',
+                           validators=[DataRequired(), Length(min=2, max=20)])
+    category = SelectField(
+        'Category', choices=[
+            ('', 'Select Category'),  # Empty value for placeholder
+            ('Intellectual', 'Intellectual'),
+            ('Physical', 'Physical')
+        ],
+        validators=[DataRequired()]
+    )
+    startdate = DateField('Start Date', format='%Y-%m-%d')
+    duedate = DateField('Due Date', format='%Y-%m-%d')
+    status = SelectField(
+        'Status', choices=[
+            ('', 'Select Status'),  # Empty value for placeholder
+            ('To-Do', 'To-Do'),
+            ('In Progress', 'In Progress'),
+            ('Done', 'Done')
+        ],
+        validators=[DataRequired()]
+    )
+    hours = StringField('Hours Required',
+                        validators=[DataRequired(), Length(min=1, max=20)])
+    reminder_date = DateField('Reminder date', format='%Y-%m-%d')
+    reminderTime = TimeField('Reminder Time')
+    submit = SubmitField('Set Reminder')
